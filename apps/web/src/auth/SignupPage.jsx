@@ -1,6 +1,6 @@
+// apps/web/src/app/auth/SignupPage.jsx
 import { useMemo, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
-import { updateMyProfile } from "../../services/profile.service";
+import { supabase } from "../lib/supabaseClient";
 
 const CITY_OPTIONS = [
   "New York",
@@ -18,10 +18,10 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Profile fields
+  // Profile fields (saved into Supabase Auth user metadata on signup)
   const [displayName, setDisplayName] = useState("");
   const [gender, setGender] = useState("Prefer not to say");
-  const [birthdate, setBirthdate] = useState(""); // YYYY-MM-DD
+  const [birthdate, setBirthdate] = useState(""); // YYYY-MM-DD from <input type="date" />
   const [city, setCity] = useState(CITY_OPTIONS[0]);
 
   const [loading, setLoading] = useState(false);
@@ -33,7 +33,7 @@ export default function SignupPage() {
     if (!password || password.length < 8) return false;
     if (!displayName.trim()) return false;
     if (!city.trim()) return false;
-    // birthdate optional; set required if you want
+    // birthdate optional; make required by adding: if (!birthdate) return false;
     return true;
   }, [email, password, displayName, city]);
 
@@ -50,51 +50,47 @@ export default function SignupPage() {
     try {
       setLoading(true);
 
-      // 1) Create user in Supabase Auth (password hashing happens in Supabase)
+      // With email confirmation ON, Supabase may NOT create a session immediately.
+      // That's expected: it will send a confirmation email and the user confirms before logging in.
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          // These values go into auth.users.raw_user_meta_data
+          // Your trigger should copy them into public.profiles on user creation.
+          data: {
+            display_name: displayName.trim(),
+            gender: gender || null,
+            birthdate: birthdate || null, // keep as YYYY-MM-DD or null
+            city: city || null,
+          },
+        },
       });
 
       if (error) throw error;
 
-      // Important note about email confirmation:
-      // If email confirmations are ON, Supabase may not create a session immediately.
-      // In that case, you might need to wait for confirmation before updating the profile.
-      // Many dev setups keep confirmation OFF for MVP.
-      const user = data?.user;
-
-      if (!user) {
-        setSuccessMsg("Account created. Please check your email to confirm your account.");
-        return;
+      // If confirmations are enabled, data.session is often null here — that's fine.
+      // The important part is: user exists + email is sent + metadata stored.
+      if (data?.user) {
+        console.log("Account Created. Email Sent")
+        setSuccessMsg(
+          "Account created! Check your email to confirm your account, then return and log in."
+        );
+      } else {
+        setSuccessMsg("Account created! Check your email to confirm your account.");
       }
-
-      // 2) Update profile row (trigger should have created it)
-      await updateMyProfile({
-        display_name: displayName.trim(),
-        gender,
-        birthdate: birthdate || null,
-        city,
-        email: email.trim(), // optional mirror; auth.users is source of truth
-      });
-
-      setSuccessMsg("Account created! You’re all set.");
-      // Optional: redirect to /closet or /home
-      // window.location.href = "/"; // or use your router navigate
     } catch (err) {
-      // Supabase errors often have `message`
-      const msg = err?.message || "Something went wrong creating your account.";
-      setErrorMsg(msg);
+      setErrorMsg(err?.message || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "40px auto", padding: 20 }}>
+    <div style={{ maxWidth: 440, margin: "40px auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>Create your account</h1>
       <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Sign up with email and password. Your password is securely hashed by Supabase.
+        Sign up with email and password. You’ll receive a confirmation email.
       </p>
 
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 12, marginTop: 18 }}>
@@ -155,7 +151,7 @@ export default function SignupPage() {
             onChange={(e) => setBirthdate(e.target.value)}
           />
           <small style={{ opacity: 0.75 }}>
-            We store your birthdate (not “age”) so it stays accurate over time.
+            We store birthdate (not “age”) so it stays accurate over time.
           </small>
         </label>
 

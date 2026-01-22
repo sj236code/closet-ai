@@ -1,21 +1,11 @@
-import { supabase } from "./lib/supabaseClient";
-import { useEffect } from "react";
+import SignupPage from "./auth/SignupPage";
 
 function App() {
-  useEffect(() => {
-    const testQuery = async () => {
-      const { data, error } = await supabase
-        .from("clothing_items")
-        .select("*");
-
-      console.log("DATA:", data);
-      console.log("ERROR:", error);
-    };
-
-    testQuery();
-  }, []);
-
-  return <div>Supabase Test</div>;
+  return (
+    <div>
+      <SignupPage />
+    </div>
+  );
 }
 
 export default App;
