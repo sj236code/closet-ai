@@ -1,0 +1,35 @@
+# =====================
+# Environment variables
+# =====================
+.env
+.env.*
+!.env.example
+
+# =====================
+# Node / React / Vite
+# =====================
+node_modules/
+dist/
+.vite/
+
+# =====================
+# Python / Flask
+# =====================
+.venv/
+__pycache__/
+*.pyc
+instance/
+.mypy_cache/
+
+# =====================
+# Supabase local dev (if ever used)
+# =====================
+.supabase/
+
+# =====================
+# OS / Editor
+# =====================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
