@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { useLocation } from "react-router-dom";
 
 export default function LoginPage() {
     const navigate = useNavigate();
+
+    const location = useLocation();
+    const from = location.state?.from || "/home";
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -40,7 +44,7 @@ export default function LoginPage() {
                 // For now: send them somewhere simple
                 // Later you'll redirect to onboarding if profile incomplete.
                 console.log("Login Successful.")
-                navigate("/home", { replace: true });
+                navigate(from, { replace: true });
             } else {
                 // Rare, but handle gracefully
                 setErrorMsg("Login succeeded but no session was created. Please try again.");
